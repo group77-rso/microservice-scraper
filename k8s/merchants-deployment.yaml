@@ -1,29 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: merchants-deployment
+  name: scraper-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: merchants
+      app: scraper
   template:
     metadata:
       labels:
-        app: merchants
+        app: scraper
     spec:
       containers:
-        - image: barbaralipnik/merchants:latest
-          name: merchants
-          env:
-            - name: KUMULUZEE_DATASOURCES0_CONNECTIONURL
-              value: jdbc:postgresql://heffalump.db.elephantsql.com/xozusiee
-            - name: KUMULUZEE_DATASOURCES0_USERNAME
-              value: xozusiee
-            - name: KUMULUZEE_DATASOURCES0_PASSWORD
-              value: Y_-mrfwxoxkMj3COJ0XLyKKVO0FHn95o
+        - image: barbaralipnik/scraper:latest
+          name: scraper
           ports:
-            - containerPort: 8081
+            - containerPort: 8082
               name: server
               protocol: TCP
 
@@ -32,12 +25,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: merchants
+  name: scraper-service
 spec:
   type: LoadBalancer
   ports:
-    - port: 8081
+    - port: 8082
       protocol: TCP
       targetPort: server
   selector:
-    app: merchants
+    app: scraper

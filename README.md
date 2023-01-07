@@ -3,29 +3,29 @@
 ## Prerequisites
 
 ```bash
-docker run -d --name pg-merchants -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=merchants -p 5432:5432 postgres:13
+docker run -d --name pg-scraper -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=scraper -p 5432:5432 postgres:13
 ```
 
 ## Build and run commands
 ```bash
 mvn clean package
 cd api/target
-java -jar merchants-api-1.0.0-SNAPSHOT.jar
+java -jar scraper-api-1.0.0-SNAPSHOT.jar
 ```
-Available at: localhost:8081/v1/merchants
+Available at: localhost:8081/v1/scraper
 
 ## Run in IntelliJ IDEA
 Add new Run configuration and select the Application type. In the next step, select the module api and for the main class com.kumuluz.ee.EeApplication.
 
-Available at: localhost:8081/v1/merchants
+Available at: localhost:8081/v1/scraper
 
 ## Docker commands
 ```bash
 docker build -t template-image .   
 docker images
 docker run template-image    
-docker tag template-image barbaralipnik/merchants:latest  
-docker push barbaralipnik/merchants
+docker tag template-image barbaralipnik/scraper:latest  
+docker push barbaralipnik/scraper
 docker ps
 ```
 
@@ -33,9 +33,9 @@ docker ps
 docker network ls  
 docker network rm rso
 docker network create rso
-docker run -d --name pg-merchants -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=merchants -p 5432:5432 --network rso postgres:13
-docker inspect pg-merchants
-docker run -p 8081:8081 --network rso -e KUMULUZEE_DATASOURCES0_CONNECTIONURL=jdbc:postgresql://pg-merchants:5432/merchants barbaralipnik/merchants:latest
+docker run -d --name pg-scraper -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=scraper -p 5432:5432 --network rso postgres:13
+docker inspect pg-scraper
+docker run -p 8081:8081 --network rso -e KUMULUZEE_DATASOURCES0_CONNECTIONURL=jdbc:postgresql://pg-scraper:5432/scraper barbaralipnik/scraper:latest
 ```
 
 ## Consul
@@ -44,7 +44,7 @@ consul agent -dev
 ```
 Available at: localhost:8500
 
-Key: environments/dev/services/merchants-service/1.0.0/config/rest-properties/maintenance-mode
+Key: environments/dev/services/scraper-service/1.0.0/config/rest-properties/maintenance-mode
 
 Value: true or false
 
@@ -53,13 +53,13 @@ Value: true or false
 kubectl version
 kubectl --help
 kubectl get nodes
-kubectl create -f k8s/merchants-deployment.yaml 
-kubectl apply -f k8s/merchants-deployment.yaml 
+kubectl create -f k8s/scraper-deployment.yaml 
+kubectl apply -f k8s/scraper-deployment.yaml 
 kubectl get services 
 kubectl get deployments
 kubectl get pods
-kubectl logs merchants-deployment-6f59c5d96c-rjz46
-kubectl delete pod merchants-deployment-6f59c5d96c-rjz46
+kubectl logs scraper-deployment-6f59c5d96c-rjz46
+kubectl delete pod scraper-deployment-6f59c5d96c-rjz46
 ```
 Secrets: https://kubernetes.io/docs/concepts/configuration/secret/
 

@@ -1,27 +1,21 @@
 kumuluzee:
-  name: merchants-service
+  name: scraper-service
   env:
     name: dev
   version: 1.0.0
   server:
-    base-url: http://localhost:8081
+    base-url: http://localhost:8082
     http:
-      port: 8081
-  datasources:
-    - jndi-name: jdbc/MerchantsDS
-      connection-url: jdbc:postgresql://localhost:5432/merchants
-      username: dbuser
-      password: postgres
-      max-pool-size: 20
+      port: 8082
   health:
     checks:
       data-source-health-check:
         type: liveness
-        jndi-name: jdbc/MerchantsDS
+        jndi-name: jdbc/scraperDS
   metrics:
     web-instrumentation:
-      - name: merchants-endpoint
-        url-pattern: /v1/merchants/*
+      - name: scraper-endpoint
+        url-pattern: /v1/scraper/*
   logs:
     config-file: '<?xml version="1.0" encoding="UTF-8"?>
       <Configuration name="comments">
@@ -45,4 +39,4 @@ kumuluzee:
 rest-properties:
   maintenance-mode: false
 microservice-locations:
-  products: http://localhost:8080
+  merchants: http://localhost:8081
