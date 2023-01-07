@@ -1,4 +1,4 @@
-FROM amazoncorretto:17
+FROM amazoncorretto:18
 RUN mkdir /app
 
 WORKDIR /app
