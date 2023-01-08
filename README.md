@@ -1,10 +1,5 @@
 # RSO: Template microservice
 
-## Prerequisites
-
-```bash
-docker run -d --name pg-scraper -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=scraper -p 5432:5432 postgres:13
-```
 
 ## Build and run commands
 ```bash
@@ -12,12 +7,12 @@ mvn clean package
 cd api/target
 java -jar scraper-api-1.0.0-SNAPSHOT.jar
 ```
-Available at: localhost:8081/v1/scraper
+Available at: localhost:8082/v1/scraper
 
 ## Run in IntelliJ IDEA
 Add new Run configuration and select the Application type. In the next step, select the module api and for the main class com.kumuluz.ee.EeApplication.
 
-Available at: localhost:8081/v1/scraper
+Available at: localhost:8082/v1/scraper
 
 ## Docker commands
 ```bash
@@ -33,7 +28,6 @@ docker ps
 docker network ls  
 docker network rm rso
 docker network create rso
-docker run -d --name pg-scraper -e POSTGRES_USER=dbuser -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=scraper -p 5432:5432 --network rso postgres:13
 docker inspect pg-scraper
 docker run -p 8081:8081 --network rso -e KUMULUZEE_DATASOURCES0_CONNECTIONURL=jdbc:postgresql://pg-scraper:5432/scraper barbaralipnik/scraper:latest
 ```

@@ -40,3 +40,4 @@ rest-properties:
   maintenance-mode: false
 microservice-locations:
   merchants: http://localhost:8081
+  emails: http://localhost:8083

@@ -48,7 +48,7 @@ public class ScraperResource {
 
     @GET
     @Path("scrape")
-    public Response scrapeTest(@Parameter(hidden = true) @HeaderParam("requestId") String requestId) {
+    public Response scrapePrices(@Parameter(hidden = true) @HeaderParam("requestId") String requestId) {
 
         requestId = requestId != null ? requestId : UUID.randomUUID().toString();
 
@@ -82,7 +82,22 @@ public class ScraperResource {
             }
             updatePrices(price, newPrice, requestId);
         }
+        sendSuccessEmail(microserviceLocations.getEmails() + "/v1/emails/send", "requestId");
         return Response.status(Response.Status.OK).header("requestId", requestId).entity(prices).build();
+    }
+
+    private void sendSuccessEmail(String url, String  requestId) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMinutes(2))
+                .header("Content-Type", "application/json")
+                .header("requestId", requestId)
+                .GET()
+                .build();
+
+        HttpClient.newBuilder()
+                .build()
+                .sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
     private void updatePrices(Price price, float newPrice, String requestId) {
