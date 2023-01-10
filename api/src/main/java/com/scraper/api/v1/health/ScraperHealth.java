@@ -8,11 +8,8 @@ import org.eclipse.microprofile.health.Readiness;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 @Readiness
 @ApplicationScoped
@@ -33,19 +30,11 @@ public class ScraperHealth implements HealthCheck {
 
     private boolean pingDependency(String url) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET()
-                    .build();
-
-            int code = HttpClient.newBuilder()
-                    .build()
-                    .send(request, HttpResponse.BodyHandlers.ofString())
-                    .statusCode();
-            return code < 300;
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("HEAD");
+            return connection.getResponseCode() == 200;
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException e) {
             return false;
         }
     }
