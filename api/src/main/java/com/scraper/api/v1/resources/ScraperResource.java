@@ -9,7 +9,11 @@ import com.scraper.api.v1.scraper.Scraper;
 import com.scraper.api.v1.scraper.SparScraper;
 import com.scraper.lib.Price;
 import com.scraper.services.config.MicroserviceLocations;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -40,13 +44,18 @@ import java.io.IOException;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ScraperResource {
 
-    private Logger log = Logger.getLogger(ScraperResource.class.getName());
+    private final Logger log = Logger.getLogger(ScraperResource.class.getName());
 
     @Inject
     private MicroserviceLocations microserviceLocations;
     private static HttpURLConnection conn;
 
     @GET
+    @Operation(description = "Scrapes websites to obtain new prices of products.", summary = "Scrape websites with products")
+    @APIResponses({
+            @APIResponse(responseCode = "200",
+                    description = "Scraping done",
+                    headers = {@Header(name = "requestId", description = "Unique request id.")})})
     @Path("scrape")
     public Response scrapePrices(@Parameter(hidden = true) @HeaderParam("requestId") String requestId) {
 
@@ -73,7 +82,7 @@ public class ScraperResource {
         }
 
         for (Price price : prices) {
-            float newPrice = 0;
+            float newPrice;
             switch (price.getMerchant()) {
                 case "Mercator" -> newPrice = MercatorScraper.scrape(price);
                 case "Spar" -> newPrice = SparScraper.scrape(price);
@@ -86,6 +95,11 @@ public class ScraperResource {
         return Response.status(Response.Status.OK).header("requestId", requestId).entity(prices).build();
     }
 
+    /**
+     * Makes request to API at given url.
+     * @param url url of the service we are calling
+     * @param requestId passed on for tracking requests
+     */
     private void sendSuccessEmail(String url, String  requestId) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -100,11 +114,18 @@ public class ScraperResource {
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    /**
+     * Updates price
+     * @param price Object for which we want to update price
+     * @param newPrice new price value
+     * @param requestId passed on for tracking requests
+     */
     private void updatePrices(Price price, float newPrice, String requestId) {
         String urlString = microserviceLocations.getMerchants() + "/v1/products/" + price.getProductId();
-        String requestBody = String.format("{\n" +
-                "    \"price\": %.2f\n" +
-                "}", newPrice);
+        String requestBody = String.format("""
+                {
+                    "price": %.2f
+                }""", newPrice);
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(urlString))
