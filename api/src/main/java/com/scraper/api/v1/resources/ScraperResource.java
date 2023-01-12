@@ -9,6 +9,8 @@ import com.scraper.api.v1.scraper.Scraper;
 import com.scraper.api.v1.scraper.SparScraper;
 import com.scraper.lib.Price;
 import com.scraper.services.config.MicroserviceLocations;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -29,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -62,9 +65,9 @@ public class ScraperResource {
         requestId = requestId != null ? requestId : UUID.randomUUID().toString();
 
         // najprej poiscemo vse cene
-        String content = callRestGet(microserviceLocations.getMerchants() + "/v1/prices/");
+        String content = fetchPrices();
 
-        if (content == null) {
+        if (content == null || content.length() == 0) {
             return null;
         }
 
@@ -83,24 +86,37 @@ public class ScraperResource {
 
         for (Price price : prices) {
             float newPrice;
-            switch (price.getMerchant()) {
-                case "Mercator" -> newPrice = MercatorScraper.scrape(price);
-                case "Spar" -> newPrice = SparScraper.scrape(price);
-                case "Jager" -> newPrice = JagerScraper.scrape(price);
-                default -> newPrice = Scraper.scrape(price);
+            try {
+                switch (price.getMerchant()) {
+                    case "Mercator" -> newPrice = MercatorScraper.scrape(price, requestId);
+                    case "Spar" -> newPrice = SparScraper.scrape(price, requestId);
+                    case "Jager" -> newPrice = JagerScraper.scrape(price, requestId);
+                    default -> newPrice = Scraper.scrape(price, requestId);
+                }
+                updatePrices(price, newPrice, requestId);
+            } catch (IOException e) {
+                log.log(Level.SEVERE, String.format("Could not scrape new price for product %s on link %s. - requestId: %s", price.getProductId(), price.getProductLink(), requestId));
+                updatePrices(price, 0, requestId);
             }
-            updatePrices(price, newPrice, requestId);
         }
         sendSuccessEmail(microserviceLocations.getEmails() + "/v1/emails/send", "requestId");
         return Response.status(Response.Status.OK).header("requestId", requestId).entity(prices).build();
     }
 
+    @Timeout(value = 2, unit = ChronoUnit.SECONDS)
+    @Retry(maxRetries = 4)
+    private String fetchPrices() {
+        return callRestGet(microserviceLocations.getMerchants() + "/v1/prices/");
+    }
+
     /**
      * Makes request to API at given url.
-     * @param url url of the service we are calling
+     *
+     * @param url       url of the service we are calling
      * @param requestId passed on for tracking requests
      */
-    private void sendSuccessEmail(String url, String  requestId) {
+    private void sendSuccessEmail(String url, String requestId) {
+        log.log(Level.INFO, String.format("Sending success email after successfully finishing scraping. - requestId: %s", requestId));
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofMinutes(2))
@@ -116,8 +132,9 @@ public class ScraperResource {
 
     /**
      * Updates price
-     * @param price Object for which we want to update price
-     * @param newPrice new price value
+     *
+     * @param price     Object for which we want to update price
+     * @param newPrice  new price value
      * @param requestId passed on for tracking requests
      */
     private void updatePrices(Price price, float newPrice, String requestId) {
@@ -140,9 +157,9 @@ public class ScraperResource {
                     .thenApply(HttpResponse::body)
                     .thenAccept(s ->
                             log.log(Level.INFO,
-                            String.format("Price for product %d in %s was updated.",
-                                    price.getProductId(),
-                                    price.getMerchant() + " - requestId: " + requestId)));
+                                    String.format("Price for product %d in %s was updated.",
+                                            price.getProductId(),
+                                            price.getMerchant() + " - requestId: " + requestId)));
         } catch (Exception e) {
             log.log(Level.SEVERE, String.format("Post was unsuccessful because of %s.", e) + " - requestId: " + requestId);
         }
